@@ -4,12 +4,14 @@
   "description": "",
   "main": "vdom.js",
   "scripts": {
-    "compile": "babel index.js --out-file compiled.js"
+    "compile": "babel index.master.js --out-file compiled.js",
+    "mine": "babel mine/index.js --out-file mine/compiled.js"
   },
   "author": "",
   "license": "SEE LICENSE IN whatever",
   "devDependencies": {
     "babel-cli": "^6.23.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-react-jsx": "^6.23.0"
   }
 }
