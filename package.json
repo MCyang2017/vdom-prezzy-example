@@ -5,7 +5,8 @@
   "main": "vdom.js",
   "scripts": {
     "compile": "babel index.master.js --out-file compiled.js",
-    "mine": "babel mine/index.js --out-file mine/compiled.js"
+    "mine": "babel mine/index.js --out-file mine/compiled.js",
+    "demo": "babel demo/index.js --out-file demo/compiled.js"
   },
   "author": "",
   "license": "SEE LICENSE IN whatever",
