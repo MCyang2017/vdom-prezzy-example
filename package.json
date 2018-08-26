@@ -6,7 +6,8 @@
   "scripts": {
     "compile": "babel index.master.js --out-file compiled.js",
     "mine": "babel mine/index.js --out-file mine/compiled.js",
-    "demo": "babel demo/index.js --out-file demo/compiled.js"
+    "demo": "babel demo/index.js --out-file demo/compiled.js",
+    "optimized": "babel optimized/index.js --out-file optimized/compiled.js"
   },
   "author": "",
   "license": "SEE LICENSE IN whatever",
