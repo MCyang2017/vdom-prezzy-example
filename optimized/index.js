@@ -119,6 +119,7 @@ function diff(oldVDom, newVDom, parent, index=0) {
     // 新建node
     if (oldVDom == undefined) {
         parent.appendChild(createElement(newVDom));
+        return;
     }
 
     const element = parent.childNodes[index];
@@ -126,6 +127,7 @@ function diff(oldVDom, newVDom, parent, index=0) {
     // 删除node
     if (newVDom == undefined) {
         parent.removeChild(element);
+        return;
     }
 
     // 替换node
@@ -135,6 +137,7 @@ function diff(oldVDom, newVDom, parent, index=0) {
         oldVDom.tag !== newVDom.tag
     ) {
         parent.replaceChild(createElement(newVDom), element);
+        return;
     }
 
     // 更新node

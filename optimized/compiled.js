@@ -49,7 +49,7 @@ function view() {
                 'li',
                 { id: i, 'class': `li-${i}` },
                 '\u7B2C',
-                i * state.num
+                i
             ))
         )
     );
@@ -83,13 +83,6 @@ function setProps(element, props) {
     }
 }
 
-/**
- * [{
- *      type,
- *      key,
- *      value
- * }]
- */
 // 比较props的变化
 function diffProps(oldVDom, newVDom) {
     const allProps = _extends({}, oldVDom.props, newVDom.props);
@@ -121,18 +114,11 @@ function diffChildren(oldVDom, newVDom, parent) {
     }
 }
 
-/**
- * {
- *      type,
- *      vdom,
- *      props,
- *      children
- * }
- */
 function diff(oldVDom, newVDom, parent, index = 0) {
     // 新建node
     if (oldVDom == undefined) {
         parent.appendChild(createElement(newVDom));
+        return;
     }
 
     const element = parent.childNodes[index];
@@ -140,11 +126,13 @@ function diff(oldVDom, newVDom, parent, index = 0) {
     // 删除node
     if (newVDom == undefined) {
         parent.removeChild(element);
+        return;
     }
 
     // 替换node
     if (typeof oldVDom !== typeof newVDom || (typeof oldVDom === 'string' || typeof oldVDom === 'number') && oldVDom !== newVDom || oldVDom.tag !== newVDom.tag) {
         parent.replaceChild(createElement(newVDom), element);
+        return;
     }
 
     // 更新node
@@ -165,7 +153,7 @@ function tick(element) {
 
     const newVDom = view();
 
-    // 生成差异对象
+    // 比较并更新节点
     diff(preVDom, newVDom, element);
 
     preVDom = newVDom;
