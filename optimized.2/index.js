@@ -47,7 +47,7 @@ function view() {
             <ul myText="dickens">
                 {
                     arr.map( i => (
-                        <li id={i} class={`li-${i}`}>
+                        <li id={i} class={`li-${i}`} key={i}>
                             第{i}
                         </li>
                     ))
@@ -123,39 +123,37 @@ function diffChildren(newVDom, parent) {
 
     // 遍历并diff子元素
     for (let i = 0; i < childLength; i++) {
-        diff(newVDom.children[i], parent, i);
+        diff(parent.childNodes[i], newVDom.children[i], parent);
     }
 }
 
-function diff(newVDom, parent, index=0) {
-    
-    const element = parent.childNodes[index];
+function diff(dom, newVDom, parent) {
 
     // 新建node
-    if (element == undefined) {
+    if (dom == undefined) {
         parent.appendChild(createElement(newVDom));
         return;
     }
 
     // 删除node
     if (newVDom == undefined) {
-        parent.removeChild(element);
+        parent.removeChild(dom);
         return;
     }
 
     // 替换node
-    if (!isSameType(element, newVDom)) {
-        parent.replaceChild(createElement(newVDom), element);
+    if (!isSameType(dom, newVDom)) {
+        parent.replaceChild(createElement(newVDom), dom);
         return;
     }
 
     // 更新node
-    if (element.nodeType === Node.ELEMENT_NODE) {
+    if (dom.nodeType === Node.ELEMENT_NODE) {
         // 比较props的变化
-        diffProps(newVDom, element);
+        diffProps(newVDom, dom);
 
         // 比较children的变化
-        diffChildren(newVDom, element);
+        diffChildren(newVDom, dom);
     }
 }
 
@@ -187,9 +185,10 @@ function tick(element) {
     }
 
     const newVDom = view();
+    const dom = element.firstChild;
 
     // 比较并更新节点
-    diff(newVDom, element);
+    diff(dom, newVDom, element);
 }
 
 function render(element) {
