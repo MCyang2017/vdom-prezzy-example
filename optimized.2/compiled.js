@@ -40,7 +40,13 @@ function h(tag, props, ...children) {
 
 function view() {
     const elm = arr.pop();
-    arr.unshift(elm);
+
+    // 用于测试能不能正常删除元素
+    if (state.num !== 9) arr.unshift(elm);
+
+    // 用于测试能不能正常添加元素
+    if (state.num === 12) arr.push(9);
+
     return h(
         'div',
         null,
@@ -117,33 +123,105 @@ function diffProps(newVDom, element) {
 
 // 比较children的变化
 function diffChildren(newVDom, parent) {
-    // 获取子元素最大长度
-    const childLength = Math.max(parent.childNodes.length, newVDom.children.length);
+    const nodesWithKey = {};
+    let nodesWithKeyCount = 0;
 
-    // 遍历并diff子元素
-    for (let i = 0; i < childLength; i++) {
-        diff(parent.childNodes[i], newVDom.children[i], parent);
+    const nodesWithoutKey = [];
+    let nodesWithoutKeyCount = 0;
+
+    const childNodes = parent.childNodes,
+          nodeLength = childNodes.length;
+
+    const vChildren = newVDom.children,
+          vLength = vChildren.length;
+
+    // 用于优化没key子元素的数组遍历
+    let min = 0;
+
+    // 将子元素分成有key和没key两组
+    for (let i = 0; i < nodeLength; i++) {
+        const child = childNodes[i],
+              props = child[ATTR_KEY];
+
+        if (props !== undefined && props.key !== undefined) {
+            nodesWithKey[props.key] = child;
+            nodesWithKeyCount++;
+        } else {
+            nodesWithoutKey[nodesWithoutKeyCount++] = child;
+        }
+    }
+
+    for (let i = 0; i < vLength; i++) {
+        const vChild = vChildren[i],
+              vProps = vChild.props;
+        let dom;
+
+        vKey = vProps !== undefined ? vProps.key : undefined;
+        if (vKey !== undefined) {
+            if (nodesWithKeyCount && nodesWithKey[vKey] !== undefined) {
+                dom = nodesWithKey[vKey];
+                nodesWithKey[vKey] = undefined;
+                nodesWithKeyCount--;
+            }
+        } else if (min < nodesWithoutKeyCount) {
+            for (let j = 0; j < nodesWithoutKeyCount; j++) {
+                const node = nodesWithoutKey[j];
+                if (node !== undefined && isSameType(node, vChild)) {
+                    dom = node;
+                    nodesWithoutKey[j] = undefined;
+                    if (j === min) min++;
+                    if (j === nodesWithoutKeyCount - 1) nodesWithoutKeyCount--;
+                    break;
+                }
+            }
+        }
+
+        const isUpdate = diff(dom, vChild, parent);
+
+        // 只有更新元素的情况下才需要考虑移动元素
+        if (isUpdate) {
+            const originChild = childNodes[i];
+            if (originChild !== dom) {
+                parent.insertBefore(dom, originChild);
+            }
+        }
+    }
+
+    // 清理剩下的未使用的dom元素
+    if (nodesWithKeyCount) {
+        for (key in nodesWithKey) {
+            const node = nodesWithKey[key];
+            if (node !== undefined) {
+                node.parentNode.removeChild(node);
+            }
+        }
+    }
+
+    while (min <= nodesWithoutKeyCount) {
+        const node = nodesWithoutKey[nodesWithoutKeyCount--];
+        if (node !== undefined) {
+            node.parentNode.removeChild(node);
+        }
     }
 }
 
 function diff(dom, newVDom, parent) {
-
     // 新建node
     if (dom == undefined) {
         parent.appendChild(createElement(newVDom));
-        return;
+        return false;
     }
 
     // 删除node
     if (newVDom == undefined) {
         parent.removeChild(dom);
-        return;
+        return false;
     }
 
     // 替换node
     if (!isSameType(dom, newVDom)) {
         parent.replaceChild(createElement(newVDom), dom);
-        return;
+        return false;
     }
 
     // 更新node
@@ -154,6 +232,8 @@ function diff(dom, newVDom, parent) {
         // 比较children的变化
         diffChildren(newVDom, dom);
     }
+
+    return true;
 }
 
 // 比较元素类型是否相同
