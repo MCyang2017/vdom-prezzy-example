@@ -7,7 +7,7 @@
     "compile": "babel index.master.js --out-file compiled.js",
     "mine": "babel mine/index.js --out-file mine/compiled.js",
     "demo": "babel demo/index.js --out-file demo/compiled.js",
-    "optimized": "babel optimized.2/index.js --out-file optimized.2/compiled.js"
+    "optimized": "babel optimized.3/index.js --out-file optimized.3/compiled.js"
   },
   "author": "",
   "license": "SEE LICENSE IN whatever",
