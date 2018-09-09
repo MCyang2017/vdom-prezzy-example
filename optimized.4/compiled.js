@@ -21,6 +21,9 @@ const ATTR_KEY = '__preprops_';
 
 const arr = [0, 1, 2, 3, 4];
 
+// 等待渲染的组件数组
+let pendingRenderComponents = [];
+
 class Component {
     constructor(props) {
         this.props = props;
@@ -29,14 +32,36 @@ class Component {
 
     setState(newState) {
         this.state = _extends({}, this.state, newState);
-        const vdom = this.render();
-        diff(this.dom, vdom, this.parent);
+        enqueueRender(this);
     }
 
     render() {
         throw new Error('component should define its own render method');
     }
 };
+
+function renderComponent() {
+    const uniquePendingRenderComponents = [...new Set(pendingRenderComponents)];
+    uniquePendingRenderComponents.forEach(component => {
+        const vdom = component.render();
+        diff(component.dom, vdom, component.parent);
+        console.log(component.state);
+    });
+    pendingRenderComponents = [];
+}
+
+function enqueueRender(component) {
+    if (pendingRenderComponents.push(component) == 1) {
+        setTimeout(renderComponent, 1000);
+        /*
+        if (typeof Promise=='function') {
+            Promise.resolve().then(renderComponent);
+        } else {
+            setTimeout(renderComponent, 0);
+        }
+        */
+    }
+}
 
 function buildComponentFromVDom(dom, vdom, parent) {
     const cpnt = vdom.tag;
@@ -51,14 +76,11 @@ function buildComponentFromVDom(dom, vdom, parent) {
     if (componentInst == undefined) {
         try {
             componentInst = new cpnt(props);
-            setTimeout(() => {
-                componentInst.setState({ name: 'Dickens' });
-            }, 5000);
         } catch (error) {
             throw new Error(`component creation error: ${cpnt.name}`);
         }
     }
-    // 创建更新 
+    // 组件更新 
     else {
             componentInst.props = props;
         }
@@ -79,14 +101,19 @@ class MyComp extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            name: 'Tina'
+            name: 'Tina',
+            count: 1
         };
+    }
+
+    elmClick() {
+        this.setState({ name: `Jack${this.state.count}`, count: this.state.count + 1 });
     }
 
     render() {
         return h(
             'div',
-            null,
+            { onClick: this.elmClick.bind(this) },
             h(
                 'div',
                 null,
@@ -176,8 +203,18 @@ function setProps(element, props) {
     element[ATTR_KEY] = props;
 
     for (let key in props) {
-        element.setAttribute(key, props[key]);
+        if (key.substring(0, 2) == 'on') {
+            const evtName = key.substring(2).toLowerCase();
+            element.addEventListener(evtName, evtProxy);
+            (element._evtListeners || (element._evtListeners = {}))[evtName] = props[key];
+        } else {
+            element.setAttribute(key, props[key]);
+        }
     }
+}
+
+function evtProxy(evt) {
+    this._evtListeners[evt.type](evt);
 }
 
 // 比较props的变化
@@ -190,16 +227,26 @@ function diffProps(newVDom, element) {
         const oldValue = newProps[key];
         const newValue = newVDom.props[key];
 
-        // 删除属性
-        if (newValue == undefined) {
-            element.removeAttribute(key);
-            delete newProps[key];
-        }
-        // 更新属性
-        else if (oldValue == undefined || oldValue !== newValue) {
-                element.setAttribute(key, newValue);
-                newProps[key] = newValue;
+        if (key.substring(0, 2) == 'on') {
+            const evtName = key.substring(2).toLowerCase();
+            if (newValue) {
+                element.addEventListener(evtName, evtProxy);
+            } else {
+                element.removeEventListener(evtName, evtProxy);
             }
+            (element._evtListeners || (element._evtListeners = {}))[evtName] = newValue;
+        } else {
+            // 删除属性
+            if (newValue == undefined) {
+                element.removeAttribute(key);
+                delete newProps[key];
+            }
+            // 更新属性
+            else if (oldValue == undefined || oldValue !== newValue) {
+                    element.setAttribute(key, newValue);
+                    newProps[key] = newValue;
+                }
+        }
     });
 
     // 属性重新赋值
