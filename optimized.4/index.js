@@ -38,27 +38,30 @@ class Component {
     }
 };
 
-function renderComponent() {
-    const uniquePendingRenderComponents = [...new Set(pendingRenderComponents)];
-    uniquePendingRenderComponents.forEach(component => {
-        const vdom = component.render();
-        diff(component.dom, vdom, component.parent);
-        console.log(component.state);
-    });
-    pendingRenderComponents = [];
-}
-
 function enqueueRender(component) {
+    // 如果push后数组长度为1，则将异步刷新任务加入到事件循环当中
     if (pendingRenderComponents.push(component) == 1) {
-        setTimeout(renderComponent, 1000);
-        /*
         if (typeof Promise=='function') {
             Promise.resolve().then(renderComponent);
         } else {
             setTimeout(renderComponent, 0);
         }
-        */
     }
+}
+
+function renderComponent() {
+    // 组件去重
+    const uniquePendingRenderComponents = [...new Set(pendingRenderComponents)];
+
+    // 渲染组件
+    uniquePendingRenderComponents.forEach(component => {
+        const vdom = component.render();
+        diff(component.dom, vdom, component.parent);
+        console.log(component.state);
+    });
+
+    // 清空待渲染列表
+    pendingRenderComponents = [];
 }
 
 function buildComponentFromVDom(dom, vdom, parent) {
@@ -106,11 +109,12 @@ class MyComp extends Component {
 
     elmClick() {
         this.setState({name: `Jack${this.state.count}`, count: this.state.count + 1 });
+        this.setState({name: `Jack${this.state.count}`, count: this.state.count + 1 });
     }
 
     render() {
         return(
-            <div onClick={this.elmClick.bind(this)}>
+            <div id="myComp" onClick={this.elmClick.bind(this)}>
                 <div>This is My Component! {this.props.count}</div>
                 <div>name: {this.state.name}</div>
             </div>
@@ -192,6 +196,7 @@ function setProps(element, props) {
     element[ATTR_KEY] = props;
 
     for (let key in props) {
+        // on开头的属性当作事件处理
         if (key.substring(0, 2) == 'on') {
             const evtName = key.substring(2).toLowerCase();
             element.addEventListener(evtName, evtProxy);
@@ -216,6 +221,7 @@ function diffProps(newVDom, element) {
         const oldValue = newProps[key];
         const newValue = newVDom.props[key];
 
+        // on开头的属性当作事件处理
         if (key.substring(0, 2) == 'on') {
             const evtName = key.substring(2).toLowerCase();
             if (newValue) {
